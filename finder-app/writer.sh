@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Mike Frye, July 2022, for "Linux System Programming and Introduction to Buildroot" Coursera course
+
 usage_str="Usage: writer.sh <file path> <string to write>"
 # Args Check
 if ! [ $# -eq 2 ]

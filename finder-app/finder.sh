@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Mike Frye, July 2022, for "Linux System Programming and Introduction to Buildroot" Coursera course
+
 error_str="Usage: finder.sh <directory path> <string to search>"
 
 # Arguments check
