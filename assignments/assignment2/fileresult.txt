@@ -1,0 +1,7 @@
+mike@mike-VirtualBox:~/linux-sys-prog/assignments/assignment-1-mikefrye777/finder-app$ make clean
+rm writer
+mike@mike-VirtualBox:~/linux-sys-prog/assignments/assignment-1-mikefrye777/finder-app$ make CROSS_COMPILE=aarch64-none-linux-gnu-
+aarch64-none-linux-gnu-gcc -Wall writer.c -o writer
+mike@mike-VirtualBox:~/linux-sys-prog/assignments/assignment-1-mikefrye777/finder-app$ file writer
+writer: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-aarch64.so.1, for GNU/Linux 3.7.0, with debug_info, not stripped
+
