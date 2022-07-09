@@ -1,4 +1,12 @@
 #include "systemcalls.h"
+#include <errno.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <error.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <fcntl.h>
 
 /**
  * @param cmd the command to execute with system()
@@ -17,6 +25,17 @@ bool do_system(const char *cmd)
  *   or false() if it returned a failure
 */
 
+    int ret = system(cmd);
+    if ( ret == -1 )
+    {
+        fprintf(stderr,"Failed to spawn child. %s",strerror(errno));
+	return false;
+    }
+    else if ( ret != 0 )
+    {
+        fprintf(stderr,"Abnormal exit. Exit status:%d",ret);
+	return false;
+    }
     return true;
 }
 
@@ -47,7 +66,7 @@ bool do_exec(int count, ...)
     command[count] = NULL;
     // this line is to avoid a compile warning before your implementation is complete
     // and may be removed
-    command[count] = command[count];
+//    command[count] = command[count];
 
 /*
  * TODO:
@@ -58,7 +77,35 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *
 */
-
+    pid_t fork_pid = fork();
+    if ( fork_pid == -1 )
+    {
+        fprintf(stderr,"Fork failed. %s\n",strerror(errno));
+        va_end(args);
+	return false;
+    }	    
+    if ( fork_pid == 0 )
+    {
+        // new process
+	if ( execv(command[0],command) == -1 )
+	{
+            error(1,errno,"In child process execv failed");
+	}
+    }	    
+    // parent
+    int status;
+    if ( waitpid(fork_pid,&status,0) == -1 )
+    {
+        fprintf(stderr,"Wait failed. %s\n",strerror(errno));
+        va_end(args);
+	return false;
+    }
+    if ( WIFEXITED(status) && WEXITSTATUS(status) ) // enforce normal exit and return of 0
+    {
+        fprintf(stderr,"Abnormal child exit.\n");
+        va_end(args);
+	return false;
+    }
     va_end(args);
 
     return true;
@@ -82,7 +129,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     command[count] = NULL;
     // this line is to avoid a compile warning before your implementation is complete
     // and may be removed
-    command[count] = command[count];
+//    command[count] = command[count];
 
 
 /*
@@ -93,6 +140,51 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *
 */
 
+    int fd = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
+    if ( fd == -1 )
+    {
+        fprintf(stderr,"Open failed. %s\n",strerror(errno));
+        va_end(args);
+        return false;
+    }
+
+    pid_t fork_pid = fork();    
+    if ( fork_pid == -1 )
+    {
+        fprintf(stderr,"Fork failed. %s\n",strerror(errno));
+        va_end(args);
+	close(fd);
+	return false;
+    }	    
+    if ( fork_pid == 0 )
+    {
+        // new process
+	if ( dup2(fd,1) < 0 ) // for the rest of this process, stdout goes to file, not tty
+	{
+            close(fd);
+	    error(1,errno,"In child process duplicate failed");
+	}
+	close(fd); // no longer now need this second fd for outputfile
+	if ( execv(command[0],command) == -1 ) // do not carry out exec if dup didn't work
+	{
+	    error(1,errno,"In child process execv failed");
+	}
+    }	    
+    // parent
+    close(fd); // close file immediately in parent
+    int status;
+    if ( waitpid(fork_pid,&status,0) == -1 )
+    {
+        fprintf(stderr,"Wait failed. %s\n",strerror(errno));
+        va_end(args);
+	return false;
+    }
+    if ( WIFEXITED(status) && WEXITSTATUS(status) ) // enforce normal exit and return of 0
+    {
+        fprintf(stderr,"Abnormal child exit.\n");
+        va_end(args);
+	return false;
+    }
     va_end(args);
 
     return true;
