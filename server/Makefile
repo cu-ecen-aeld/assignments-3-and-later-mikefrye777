@@ -6,7 +6,7 @@ default: aesdsocket
 
 all: aesdsocket
 
-writer:
+aesdsocket:
 	$(CROSS_COMPILE)$(CC) $(CFLAGS) aesdsocket.c -o aesdsocket
 
 clean:
