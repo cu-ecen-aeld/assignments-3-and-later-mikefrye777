@@ -295,7 +295,7 @@ int main(int argc, char** argv)
 	        dropped = false;
             }
 	    else { // realloc buf and put inc start at the right location to read next kB input of the current packet
-		//syslog(LOG_DEBUG, "Current buffer of size %ld to be realloc'ed to size %ld",bufsize, bufsize + bufinc);
+		syslog(LOG_DEBUG, "Current buffer of size %ld to be realloc'ed to size %ld",bufsize, bufsize + bufinc);
                 alloc_base = realloc(buf,(bufsize + bufinc)*sizeof(char));
                 if (alloc_base == NULL) {
                     syslog(LOG_ERR,"Buffer realloc failed! Requested %ld. Dropping packet.", bufsize+1);
@@ -306,6 +306,7 @@ int main(int argc, char** argv)
 	            inc_start = (void *)( (char*)buf + bufsize );
 		    bufsize += bufinc;
 		    size_to_read = bufinc;
+		    syslog(LOG_DEBUG, " == Realloc == Buffer size: %ld, Next read max: %ld, Next write: %p, Buffer loc: %p", bufsize, size_to_read, inc_start, buf);
 	        }
 	    }
 
