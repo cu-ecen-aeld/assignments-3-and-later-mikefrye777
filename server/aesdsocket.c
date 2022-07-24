@@ -232,9 +232,11 @@ int main(int argc, char** argv)
             char *last = (char*)inc_start + numread - 1;
             if ( *last == '\n' ) {
 	        // packet is complete
+		size_t packet_length = bufsize - size_to_read + numread;
+		syslog(LOG_DEBUG, "Received packet of size %ld",packet_length);
 	    
 	        // catch corner case where we perfectly filled the buffer increment
-	        if ( numread == bufsize ) {
+	        if ( numread == size_to_read ) {
 		    syslog(LOG_INFO, "Wrote packet exactly to boundary");
                     alloc_base = realloc(buf,(bufsize+1)*sizeof(char));
                     if (alloc_base == NULL) {
@@ -251,10 +253,23 @@ int main(int argc, char** argv)
 		
 	        }
 	        if ( !dropped ) {
-	            // write new string to temp file	    
-                    if ( ( numwritten = fprintf(cfh, "%s", (char*)buf) ) < ( bufsize - bufinc + numread ) ) {
-                        syslog(LOG_ERR,"Only wrote %ld bytes to file out of string's %ld", numwritten, bufsize - bufinc + numread);
-		    }
+		    size_t left_to_write = packet_length;
+		    char *writestart = (char*)buf;
+	            // write new string to temp file	   
+		    
+		    do {
+		        numwritten = fprintf(cfh, "%s", writestart); 
+			if ( numwritten < 0 ) {
+                            syslog(LOG_ERR,"Failure writing to client file : %s", strerror(errno));
+                        }
+			else {
+			    left_to_write -= numwritten;
+			    if ( left_to_write > 0 ) {
+                                syslog(LOG_DEBUG,"Only wrote %ld bytes to file, %ld still left to write", numwritten, left_to_write);
+				writestart += numwritten;
+			    }
+			}
+		    } while ( left_to_write > 0 && numwritten > 0 );
 	        }
                 // write back all file contents (echo full packet history) one packet at a time
                 // seek to file start
